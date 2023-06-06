@@ -18,7 +18,7 @@ spec:
       containers:
       - name: eed-java-backend-example
         imagePullPolicy: Always
-        image: image/ubuntu:latest.04
+        image: image/ubuntu:latest.05
         envFrom:
         - configMapRef:
             name: env-config-map
