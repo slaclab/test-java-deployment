@@ -13,4 +13,4 @@ if [[ -z "$DEPLOYMENT_FILE" ]]; then
     exit 1
 fi
 
-sed -i '' "s#^.*image:.*#        image: $IMAGE_NAME#" $DEPLOYMENT_FILE
+sed -i  "s#^.*image:.*#        image: $IMAGE_NAME#" $DEPLOYMENT_FILE
