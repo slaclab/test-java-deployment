@@ -1,0 +1,34 @@
+name: start_deployment
+on:
+    workflow_dispatch:
+        inputs:
+            deployment_image:
+                description: 'Image to deploy'
+                required: true
+                type: string
+jobs:
+    prepare:
+        runs-on: ubuntu-latest
+        env:
+            DEPLOY_IMAGE: ${{ inputs.deployment_image }}
+        steps:
+            - run: |
+                echo "Configure deploy with image $DEPLOY_IMAGE"
+    test:
+        runs-on: ubuntu-latest
+        environment: test
+        needs: prepare
+        steps:
+        - name: "patch configuration for test"
+          run: |
+            echo "patch test conf"
+    production:
+        runs-on: ubuntu-latest
+        environment:
+            name: production
+            url: https://github.com
+        needs: test
+        steps:
+        - name: "patch configuration for test"
+          run: |
+                echo "patch prod conf":

@@ -1,0 +1,96 @@
+name: Build Test And Create
+on: 
+  workflow_call:
+      secrets:
+          token:
+              required: false
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+jobs:
+    build_and_test:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout source code
+          uses: actions/checkout@v3
+        - uses: actions/setup-java@v3
+          with:
+            distribution: temurin
+            java-version: 19
+        - name: Setup Gradle
+          uses: gradle/gradle-build-action@v2
+          env:
+            CI: true
+          with:
+            gradle-version: 7.6
+            arguments: assemble
+        - name: Setup Gradle
+          uses: gradle/gradle-build-action@v2
+          env:
+            CI: true
+          with:
+            gradle-version: 7.6
+            arguments: test
+    build-docker-images:
+      runs-on: ubuntu-latest
+      needs: build_and_test
+      outputs:
+        IMAGE_TO_DEPLOY: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}
+      steps:
+        - name: Checkout source code
+          uses: actions/checkout@v3
+          with:
+            fetch-depth: 0
+        - name: Install GitVersion
+          uses: gittools/actions/gitversion/setup@v0
+          with:
+            versionSpec: '5.x'
+        - name: Determine Version
+          id: gitversion
+          uses: gittools/actions/gitversion/execute@v0
+          with:
+            useConfigFile: true
+        - name: manage version
+          run: |
+            echo "#define APP_VERSION \"v$GitVersion_Major.$GitVersion_Minor.$GitVersion_Patch\""
+            #echo "#define APP_VERSION \"v$GitVersion_Major.$GitVersion_Minor.$GitVersion_Patch\"" > version.h
+        - name: Set up Docker Buildx
+          uses: docker/setup-buildx-action@v2
+        - name: Log in to the Container registry
+          uses: docker/login-action@v2
+          with:
+            registry: ${{ env.REGISTRY }}
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+        - name: Docker Metadata
+          id: meta
+          uses: docker/metadata-action@v4
+          with:
+            # list of Docker images to use as base name for tags
+            images: ${{env.REGISTRY }}/${{ env.IMAGE_NAME }}
+            # generate Docker tags based on the following events/attributes
+            tags: |
+              type=sha
+            labels: |
+              maintainer=bisegni@slac.stanford.edu
+        - name: Build and push Docker image
+          uses: docker/build-push-action@v4
+          id: build_and_push
+          with:
+            push: true
+            tags: ${{ steps.meta.outputs.tags }}
+            labels: ${{ steps.meta.outputs.labels }}
+    deploy:
+        name: deploy-prepare
+        runs-on: ubuntu-latest
+        needs: build-docker-images
+        steps:
+          - run: |
+              echo "patch configuration pro with the image"
+          - run: |
+                gh workflow --repo bisegni/test-deploy-workflow run start_deployment -f deployment_image="${{needs.build-docker-images.outputs.IMAGE_TO_DEPLOY}} "
+            env:
+                GITHUB_TOKEN: ${{ secrets.TRIGGER_WORKFLOW_SECRET }}

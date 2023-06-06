@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k2eg
+  annotations:
+    prometheus.io/scrape: 'true'
+    prometheus.io/path: '/metrics'
+    prometheus.io/port: '8080'
+spec:
+  selector:
+    matchLabels:
+      app: eed-java-backend-example
+  template:
+    metadata:
+      labels:
+        app: eed-java-backend-example
+    spec:
+      containers:
+      - name: eed-java-backend-example
+        imagePullPolicy: Always
+        image: __image_name__
+        envFrom:
+        - configMapRef:
+            name: env-config-map
+        resources:
+          limits:
+            memory: 512Mi
+            cpu: "250m"
+        ports:
+        - containerPort: 8080
+      imagePullSecrets:
+      - name: gh-secret
