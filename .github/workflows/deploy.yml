@@ -24,55 +24,16 @@ jobs:
                 echo "Configure deploy with image $DEPLOY_IMAGE"
                 tools/set-image-name.sh $DEPLOY_IMAGE test/deployment.yaml
                 cat test/deployment.yaml
-            - uses: EndBug/add-and-commit@v9
+            - name: Commit and Push Changes
               id: commit-and-push
-              with:
-                # The arguments for the `git add` command (see the paragraph below for more info)
-                # Default: '.'
-                add: 'test'
-            
-                # The name of the user that will be displayed as the author of the commit.
-                # Default: depends on the default_author input
-                author_name: ${{ github.actor }}
-            
-                # The email of the user that will be displayed as the author of the commit.
-                # Default: depends on the default_author input
-                author_email: no-reply@github.com
-            
-                # The name of the custom committer you want to use, if different from the author of the commit.
-                # Default: the name of the author (set with either author_name or default_author)
-                committer_name: ${{ github.actor }}
-            
-                # The email of the custom committer you want to use, if different from the author of the commit.
-                # Default: the email of the author (set with either author_email or default_author)
-                committer_email: no-reply@github.com
-
-                # Determines the way the action fills missing author name and email. Three options are available:
-                # - github_actor -> UserName <UserName@users.noreply.github.com>
-                # - user_info -> Your Display Name <your-actual@email.com>
-                # - github_actions -> github-actions <email associated with the github logo>
-                # Default: github_actor
-                default_author: github_actor
-            
-                # Arguments for the git fetch command. If set to false, the action won't fetch the repo.
-                # For more info as to why fetching is usually recommended, please see the "Performance on large repos" FAQ. 
-                # Default: --tags --force
-                fetch: false
-            
-                # The message for the commit.
-                # Default: 'Commit from GitHub Actions (name of the workflow)'
-                message: 'Update test deployment to use image $DEPLOY_IMAGE'
-            
-                # The way the action should handle pathspec errors from the add and remove commands. Three options are available:
-                # - ignore -> errors will be logged but the step won't fail
-                # - exitImmediately -> the action will stop right away, and the step will fail
-                # - exitAtEnd -> the action will go on, every pathspec error will be logged at the end, the step will fail.
-                # Default: ignore
-                pathspec_error_handling: exitImmediately
-            
-                # Whether to push the commit and, if any, its tags to the repo. It can also be used to set the git push arguments (see the paragraph below for more info)
-                # Default: true
-                push: true
+              run: |
+                echo "Commit test deploy with image $DEPLOY_IMAGE" 
+                git add test
+                git config --local user.email "github-actions[bot]@users.noreply.github.com"
+                git config --local user.name "github-actions[bot]"
+                git commit -m "Update test deployment ot uses the image '$DEPLOY_IMAGE'"
+                git push
+                echo "commit_hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
     update-production-deployment:
         runs-on: ubuntu-latest
@@ -84,56 +45,19 @@ jobs:
             - name: Checkout source code
               uses: actions/checkout@v3
               with:
-                ref: ${{ needs.update-test-deployment.outputs.commit_hash }}
+                ref: main
             - run: |
                 echo "Configure deploy with image $DEPLOY_IMAGE"
                 tools/set-image-name.sh $DEPLOY_IMAGE production/deployment.yaml
+                cat production/test.yaml
                 cat production/deployment.yaml
-            - uses: EndBug/add-and-commit@v9
-              with:
-                # The arguments for the `git add` command (see the paragraph below for more info)
-                # Default: '.'
-                add: 'production'
-            
-                # The name of the user that will be displayed as the author of the commit.
-                # Default: depends on the default_author input
-                author_name: github_actions
-            
-                # The email of the user that will be displayed as the author of the commit.
-                # Default: depends on the default_author input
-                author_email: actions@github.com
-            
-                # The name of the custom committer you want to use, if different from the author of the commit.
-                # Default: the name of the author (set with either author_name or default_author)
-                committer_name: github_actions
-            
-                # The email of the custom committer you want to use, if different from the author of the commit.
-                # Default: the email of the author (set with either author_email or default_author)
-                committer_email: actions@github.com
-
-                # Determines the way the action fills missing author name and email. Three options are available:
-                # - github_actor -> UserName <UserName@users.noreply.github.com>
-                # - user_info -> Your Display Name <your-actual@email.com>
-                # - github_actions -> github-actions <email associated with the github logo>
-                # Default: github_actor
-                default_author: github_actor
-            
-                # Arguments for the git fetch command. If set to false, the action won't fetch the repo.
-                # For more info as to why fetching is usually recommended, please see the "Performance on large repos" FAQ. 
-                # Default: --tags --force
-                fetch: true
-            
-                # The message for the commit.
-                # Default: 'Commit from GitHub Actions (name of the workflow)'
-                message: 'Update test deployment to use image $DEPLOY_IMAGE'
-            
-                # The way the action should handle pathspec errors from the add and remove commands. Three options are available:
-                # - ignore -> errors will be logged but the step won't fail
-                # - exitImmediately -> the action will stop right away, and the step will fail
-                # - exitAtEnd -> the action will go on, every pathspec error will be logged at the end, the step will fail.
-                # Default: ignore
-                pathspec_error_handling: exitImmediately
-            
-                # Whether to push the commit and, if any, its tags to the repo. It can also be used to set the git push arguments (see the paragraph below for more info)
-                # Default: true
-                push: true
+                - name: Commit and Push Changes
+                id: commit-and-push
+                run: |
+                  echo "Commit production deploy with image $DEPLOY_IMAGE" 
+                  git add production
+                  git config --local user.email "github-actions[bot]@users.noreply.github.com"
+                  git config --local user.name "github-actions[bot]"
+                  git commit -m "Update production deployment ot uses the image '$DEPLOY_IMAGE'"
+                  git push
+                  echo "commit_hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
