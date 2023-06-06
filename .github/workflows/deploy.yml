@@ -51,9 +51,8 @@ jobs:
                 tools/set-image-name.sh $DEPLOY_IMAGE production/deployment.yaml
                 cat test/deployment.yaml
                 cat production/deployment.yaml
-                - name: Commit and Push Changes
-                id: commit-and-push
-                run: |
+            - name: Commit and Push Changes
+              run: |
                   echo "Commit production deploy with image $DEPLOY_IMAGE" 
                   git add production
                   git config --local user.email "github-actions[bot]@users.noreply.github.com"
