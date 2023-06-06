@@ -15,6 +15,8 @@ jobs:
     update-test-deployment:
         runs-on: ubuntu-latest
         environment: test
+        outputs:
+            commit_hash: ${{ steps.commit-and-push.outputs.commit_long_sha }}
         steps:
             - name: Checkout source code
               uses: actions/checkout@v3
@@ -23,6 +25,7 @@ jobs:
                 tools/set-image-name.sh $DEPLOY_IMAGE test/deployment.yaml
                 cat test/deployment.yaml
             - uses: EndBug/add-and-commit@v9
+              id: commit-and-push
               with:
                 # The arguments for the `git add` command (see the paragraph below for more info)
                 # Default: '.'
@@ -80,6 +83,8 @@ jobs:
         steps:
             - name: Checkout source code
               uses: actions/checkout@v3
+              with:
+                ref: ${{ needs.update-test-deployment.outputs.commit_hash }}
             - run: |
                 echo "Configure deploy with image $DEPLOY_IMAGE"
                 tools/set-image-name.sh $DEPLOY_IMAGE production/deployment.yaml
@@ -92,19 +97,19 @@ jobs:
             
                 # The name of the user that will be displayed as the author of the commit.
                 # Default: depends on the default_author input
-                author_name: ${{ github.actor }}
+                author_name: github_actions
             
                 # The email of the user that will be displayed as the author of the commit.
                 # Default: depends on the default_author input
-                author_email: no-reply@github.com
+                author_email: actions@github.com
             
                 # The name of the custom committer you want to use, if different from the author of the commit.
                 # Default: the name of the author (set with either author_name or default_author)
-                committer_name: ${{ github.actor }}
+                committer_name: github_actions
             
                 # The email of the custom committer you want to use, if different from the author of the commit.
                 # Default: the email of the author (set with either author_email or default_author)
-                committer_email: no-reply@github.com
+                committer_email: actions@github.com
 
                 # Determines the way the action fills missing author name and email. Three options are available:
                 # - github_actor -> UserName <UserName@users.noreply.github.com>
